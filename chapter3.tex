@@ -1,0 +1,246 @@
+% ============================================================
+% Chapter 3 - Methodology (rewritten to match Chapter 4)
+% Needs in your preamble:  \usepackage{amsmath,booktabs}
+% Every \fill{...} is something only YOU know: replace it with the
+% real detail, or delete the sentence if it is not true for your study.
+% ============================================================
+\providecommand{\fill}[1]{\textbf{[#1]}}
+
+\chapter{Methodology}
+
+This chapter presents the methodology used to develop and evaluate a predictive
+framework for informal settlement expansion in Windhoek. The study follows a
+data-driven approach that integrates spatial analysis and machine learning. The
+chapter describes the research design, the study area and data, preprocessing,
+feature engineering, model specification, training and validation, evaluation
+metrics, spatial risk mapping, the software used, and ethical considerations.
+
+\section{Research Design}
+
+The study adopts a quantitative, predictive research design grounded in data
+science principles. The study area is divided into a regular grid of spatial
+cells, and the task is framed as a binary classification problem: for each cell,
+estimate the probability that informal settlement expansion occurs. Two
+supervised learning models are developed and compared on identical data and
+metrics. Logistic regression serves as an interpretable baseline that quantifies
+the direction and strength of each spatial driver, and a Random Forest serves as
+the main predictive model, able to capture nonlinear effects and interactions. A
+single decision tree is included as a benchmark. The fitted probabilities are
+then projected across the grid to produce a spatial vulnerability map.
+
+\section{Study Area and Data}
+
+\subsection{Study Area and Spatial Unit}
+
+The study area is the Windhoek metropolitan region, bounded by latitudes
+$22.65^{\circ}$S to $22.45^{\circ}$S and longitudes $17.00^{\circ}$E to
+$17.18^{\circ}$E. The area is divided into a regular grid of $50 \times 50 =
+2{,}500$ cells. Each cell is one observation and represents a localised land
+parcel evaluated for informal settlement expansion.
+
+\subsection{Data Sources}
+
+The predictors and the response variable were obtained from publicly available
+spatial and socio-economic sources, summarised in Table~\ref{tab:vars}.
+
+\begin{table}[ht]
+\centering
+\caption{Variables used in the study}
+\label{tab:vars}
+\begin{tabular}{llll}
+\toprule
+Variable & Description & Unit & Source / derivation \\
+\midrule
+RoadDist    & Distance to nearest major road          & km        & \fill{source} \\
+SettleDist  & Distance to nearest informal settlement & km        & \fill{source} \\
+PopDensity  & Population density                      & persons/km$^2$ & \fill{source} \\
+Elevation   & Terrain elevation                       & m (ASL)   & \fill{DEM source} \\
+Slope       & Terrain slope                           & degrees   & derived from \fill{DEM} \\
+CBDDist     & Distance to the Central Business District & km      & \fill{reference point} \\
+InfraProx   & Distance to nearest essential infrastructure & km   & \fill{what counts as infrastructure} \\
+Expansion   & Informal settlement expansion (response) & 0/1      & \fill{how labels were derived} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\fill{State how the response variable was derived, for example change detection
+between two named dates using satellite imagery or settlement footprints, and
+state the time period it covers. If the dataset was simulated or generated
+rather than observed, say so clearly here.}
+
+\section{Data Preprocessing}
+
+Spatial data were converted into a tabular format in which each grid cell is a
+row. Missing values were handled by \fill{method, or state that none were
+present}. The response variable $Y_i$ is binary:
+\begin{equation}
+Y_i =
+\begin{cases}
+1 & \text{if informal settlement expansion was observed in cell } i,\\
+0 & \text{otherwise.}
+\end{cases}
+\end{equation}
+Of the 2{,}500 cells, 416 (16.6\%) are expansion cells, so the classes are
+imbalanced; stratified sampling is therefore used so that this proportion is
+preserved in every training, test and validation subset.
+
+Predictors were standardised using the mean and standard deviation of the
+training set only, to avoid information leaking from the test set:
+\begin{equation}
+z_{ij} = \frac{x_{ij} - \bar{x}_j}{s_j},
+\end{equation}
+where $\bar{x}_j$ and $s_j$ are the training mean and standard deviation of
+predictor $j$.
+
+\section{Feature Engineering}
+
+Seven spatial predictors were derived for every grid cell, selected for their
+relevance to urban expansion in the literature: distance to major roads
+(\texttt{RoadDist}), distance to existing informal settlements
+(\texttt{SettleDist}), population density (\texttt{PopDensity}), elevation
+(\texttt{Elevation}), slope (\texttt{Slope}), distance to the Central Business
+District (\texttt{CBDDist}) and distance to essential infrastructure
+(\texttt{InfraProx}). Distances were computed from cell centroids using
+\fill{GIS or Python method}, and slope was derived from the digital elevation
+model. The predictors were combined with the response variable into a single
+dataset. Pearson correlation coefficients and group-wise boxplots were used
+in the exploratory analysis to examine relationships among predictors and with
+the response.
+
+\section{Model Specification}
+
+\subsection{Logistic Regression}
+
+Let $p_i = P(Y_i = 1)$ denote the probability of expansion in cell $i$. The
+logistic regression model is
+\begin{equation}
+p_i = \frac{1}{1 + e^{-z_i}}, \label{eq:logistic}
+\end{equation}
+with linear predictor
+\begin{equation}
+z_i = \beta_0 + \beta_1\,\text{RoadDist}_i + \beta_2\,\text{SettleDist}_i
++ \beta_3\,\text{PopDensity}_i + \beta_4\,\text{Elevation}_i
++ \beta_5\,\text{Slope}_i + \beta_6\,\text{CBDDist}_i
++ \beta_7\,\text{InfraProx}_i, \label{eq:linpred}
+\end{equation}
+which can be written in logit form as
+\begin{equation}
+\log\!\left(\frac{p_i}{1-p_i}\right) = \beta_0 + \sum_{j=1}^{7}\beta_j X_{ji}.
+\label{eq:logit}
+\end{equation}
+Because the predictors are standardised, $e^{\beta_j}$ is the odds ratio
+associated with a one-standard-deviation increase in $X_j$, holding the other
+predictors constant. Coefficients are estimated by maximum likelihood, and
+standard errors, $z$-statistics and $p$-values are used to assess significance
+at the 5\% level.
+
+\subsection{Random Forest}
+
+The Random Forest is an ensemble of $B$ decision trees trained on bootstrap
+samples, with a random subset of predictors considered at each split. The
+class prediction is the majority vote and the estimated probability of
+expansion is the share of trees voting for expansion:
+\begin{equation}
+\hat{Y}_i = \text{majority vote}\{T_1(X_i), T_2(X_i), \ldots, T_B(X_i)\},
+\qquad
+\hat{p}_i = \frac{1}{B}\sum_{b=1}^{B} \mathbb{I}\big(T_b(X_i) = 1\big),
+\label{eq:rf}
+\end{equation}
+where $T_b(X_i)$ is the prediction of the $b$-th tree and $\mathbb{I}(\cdot)$ is
+the indicator function. This study uses $B = 100$ trees with a maximum depth of
+8. Variable importance is measured by the mean decrease in Gini impurity,
+\begin{equation}
+i(t) = 1 - \sum_{k} p_k(t)^2, \qquad
+\text{Imp}(X_j) = \frac{1}{B}\sum_{b=1}^{B}\sum_{t \in T_b:\, v(t)=j}
+\frac{N_t}{N}\,\Delta i(t),
+\label{eq:gini}
+\end{equation}
+where $p_k(t)$ is the proportion of class $k$ at node $t$, $v(t)$ is the
+variable used to split node $t$, $N_t$ is the number of observations reaching
+the node and $N$ the total number of observations.
+
+\subsection{Benchmark Model}
+
+A single decision tree trained on the same data and predictors is used as a
+benchmark, to show how much the ensemble improves on one tree.
+
+\section{Model Training and Validation}
+
+The 2{,}500 cells were split into a training set of 2{,}000 cells (80\%) and a
+holdout test set of 500 cells (20\%) using stratified random sampling and a
+fixed random seed for reproducibility. Model parameters were estimated on the
+training set, and predictive performance was assessed on the test set. To check
+robustness, 5-fold stratified cross-validation was also applied to the full
+dataset, and the mean and standard deviation of the ROC-AUC across folds are
+reported.
+
+Because neighbouring grid cells are spatially autocorrelated, a random split can
+give optimistic performance estimates. \fill{Optional: include only if you run
+it. As a sensitivity check, spatial block cross-validation was also performed,
+in which contiguous blocks of cells are held out together.}
+
+\section{Model Evaluation}
+
+Predicted classes are obtained with a probability threshold of 0.5. Performance
+is summarised with a confusion matrix (true positives TP, false positives FP,
+true negatives TN and false negatives FN) and the following metrics:
+\begin{align}
+\text{Accuracy}  &= \frac{TP + TN}{TP + TN + FP + FN}, &
+\text{Precision} &= \frac{TP}{TP + FP}, \\
+\text{Recall}    &= \frac{TP}{TP + FN}, &
+F_1 &= \frac{2\,\text{Precision}\times\text{Recall}}{\text{Precision}+\text{Recall}}.
+\end{align}
+The Receiver Operating Characteristic (ROC) curve plots the true positive rate
+$TP/(TP+FN)$ against the false positive rate $FP/(FP+TN)$ over all thresholds,
+and the Area Under the Curve (ROC-AUC) summarises how well a model separates the
+two classes. Precision-recall curves are also reported because expansion cells
+are the minority class.
+
+\section{Spatial Prediction and Risk Mapping}
+
+The best-performing model is applied to every grid cell to obtain an estimated
+expansion probability $\hat{p}_i$, which is plotted at the cell coordinates to
+produce a continuous vulnerability surface for Windhoek. For interpretation,
+cells are grouped into five risk classes, as shown in Table~\ref{tab:classes}.
+
+\begin{table}[ht]
+\centering
+\caption{Risk classes used for spatial vulnerability mapping}
+\label{tab:classes}
+\begin{tabular}{ll}
+\toprule
+Risk class & Probability range \\
+\midrule
+Critical high-risk         & $\hat{p} > 0.85$ \\
+High risk                  & $0.70 < \hat{p} \le 0.85$ \\
+Moderate expansion buffer  & $0.30 \le \hat{p} \le 0.70$ \\
+Low risk                   & $0.10 \le \hat{p} < 0.30$ \\
+Very low risk / protected  & $\hat{p} < 0.10$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Tools and Software}
+
+The analysis was implemented in Python. Pandas and NumPy were used for data
+manipulation, Scikit-learn for the machine learning models and evaluation,
+Statsmodels for the logistic regression coefficient estimates, standard errors
+and $p$-values, and Matplotlib and Seaborn for visualisation.
+\fill{Name the GIS software or libraries actually used for spatial processing,
+for example QGIS, GeoPandas or Google Earth Engine.}
+
+\section{Ethical Considerations}
+
+The study uses publicly available data and no sensitive personal information.
+Predictions are produced for grid cells, not for individuals or households, and
+are intended to support planning rather than enforcement against residents. The
+risk maps are decision-support tools that carry uncertainty, so results are
+reported with appropriate caveats to avoid misrepresentation or misuse.
+
+\section{Chapter Summary}
+
+This chapter described the grid-based predictive framework, the seven spatial
+predictors, the logistic regression, Random Forest and decision tree models,
+the training and validation design, the evaluation metrics, and the risk
+mapping procedure. The next chapter presents the results obtained from
+implementing this methodology.

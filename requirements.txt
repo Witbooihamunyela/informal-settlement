@@ -1,0 +1,10 @@
+streamlit>=1.50
+pandas
+numpy
+scikit-learn
+plotly
+folium
+streamlit-folium
+earthengine-api
+requests
+streamlit-geolocation
