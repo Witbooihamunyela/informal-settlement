@@ -104,8 +104,8 @@ st.markdown("**Witbooi Hamunyela**  |  B.Sc Data Science (Honours), University o
 st.caption("Department of Computing, Mathematical and Statistical Sciences, Faculty of Agriculture, "
            "Engineering & Natural Science  |  Research prototype")
 st.divider()
-if not os.path.exists(CSV_PATH):
-    st.warning("Models are trained on a PLACEHOLDER dataset.")
+#if not os.path.exists(CSV_PATH):
+    #st.warning("Models are trained on a PLACEHOLDER dataset.")
 model_name = st.sidebar.radio("Model", ["Random Forest", "Logistic Regression"])
 st.sidebar.caption("Google Earth Engine: " + ("connected" if ee else "not connected (OpenTopoData fallback; "
                    "PopDensity must be entered manually)"))
