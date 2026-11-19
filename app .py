@@ -177,8 +177,8 @@ def location_map():
 
 
 def no_data_screen(problem):
-    st.error("No real dataset has been loaded yet, so the models are NOT trained and no probabilities are shown. "
-             "This app never trains on placeholder data. Build the real dataset from Google Earth Engine below.")
+    #st.error("No real dataset has been loaded yet, so the models are NOT trained and no probabilities are shown. "
+     #        "This app never trains on placeholder data. Build the real dataset from Google Earth Engine below.")
     st.caption(problem)
     st.subheader("Build the real dataset from Google Earth Engine")
     proj = st.text_input("Google Cloud project ID (the one with Earth Engine enabled)",
